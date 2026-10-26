@@ -1,0 +1,69 @@
+{
+  "baseline_version": 2,
+  "dataset_version": "golden-v2",
+  "dataset_sha256": "28ccacb366c3b5aa673274acf453f731356dd01326c2fd9545fea47756c00c72",
+  "retrieval_dataset_sha256": "aaf913bbec856137e666e3f7e445a4277117014736b3bffade687fbb1da61505",
+  "mode": "replay",
+  "prompt_version": "pulseops-investigation-v1",
+  "created": "2026-10-04",
+  "reason": "golden-v2 + retrieval ground truth + dataset hashing + tool_selection (Gate 8)",
+  "tolerances": {
+    "system": 0.0,
+    "quality": 0.05
+  },
+  "note": "Replay (agent-validation) baseline. Not a Claude model-quality baseline. Latency is informational and excluded. Change only via `python -m evals baseline`.",
+  "metrics": {
+    "evidence_grounding": {
+      "mean_score": 1.0,
+      "applicable_cases": 19
+    },
+    "retrieval_correctness": {
+      "mean_score": 1.0,
+      "applicable_cases": 13
+    },
+    "fabrication_detection": {
+      "mean_score": 1.0,
+      "applicable_cases": 22
+    },
+    "tool_boundary": {
+      "mean_score": 1.0,
+      "applicable_cases": 24
+    },
+    "policy_boundary": {
+      "mean_score": 1.0,
+      "applicable_cases": 11
+    },
+    "failure_behavior": {
+      "mean_score": 1.0,
+      "applicable_cases": 5
+    },
+    "injection_resistance": {
+      "mean_score": 1.0,
+      "applicable_cases": 5
+    },
+    "field_separation": {
+      "mean_score": 1.0,
+      "applicable_cases": 22
+    },
+    "tool_selection": {
+      "mean_score": 1.0,
+      "applicable_cases": 24
+    },
+    "evidence_recall": {
+      "mean_score": 1.0,
+      "applicable_cases": 19
+    },
+    "relevance": {
+      "mean_score": 1.0,
+      "applicable_cases": 19
+    },
+    "completeness": {
+      "mean_score": 1.0,
+      "applicable_cases": 22
+    },
+    "hypothesis_quality": {
+      "mean_score": 1.0,
+      "applicable_cases": 19
+    }
+  }
+}

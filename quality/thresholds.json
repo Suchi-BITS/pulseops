@@ -1,0 +1,24 @@
+{
+  "python": {
+    "total_percent": 90,
+    "modules": {
+      "app/core/security.py": 97,
+      "app/services/policy_service.py": 80,
+      "app/api/workflow.py": 91,
+      "app/services/workflow_service.py": 86
+    }
+  },
+  "frontend": {
+    "lines": 95,
+    "statements": 95,
+    "functions": 92,
+    "branches": 82
+  },
+  "notes": {
+    "policy": "A ratchet, not a target. Values are the measured baseline rounded DOWN. They are only ever raised (python scripts/quality_gate.py --ratchet) and never lowered without a reviewed reason.",
+    "python_measure": "coverage.py with branch coverage over app/; percent = (covered statements + covered branches) / (statements + branches).",
+    "critical_modules": "core/security.py, policy_service.py and the workflow service/API carry their own, higher floors.",
+    "exclusions": "None are configured. The code that talks to the real Claude SDK (agent/service.py) is measured but has no separate floor: it is exercised through a scripted SDK client, not a live model.",
+    "frontend_exclusions": "src/test/** and src/main.tsx (the one-line bootstrap that only mounts <App/>)."
+  }
+}

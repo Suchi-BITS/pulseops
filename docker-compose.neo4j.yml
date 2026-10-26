@@ -1,0 +1,26 @@
+# Optional local Neo4j container (moved out of docker-compose.yml in Gate 9).
+#
+# PulseOps does NOT connect to Neo4j at runtime (the graph is derived from SQLite) and the ontology is not loaded
+# into it. Neo4j Desktop remains the local development environment; this file only keeps the container available.
+# No default password: set NEO4J_PASSWORD in the environment.
+#
+# Start:  docker compose -f docker-compose.neo4j.yml up -d
+services:
+  neo4j:
+    image: neo4j:5.20
+    container_name: pulseops-neo4j
+    ports:
+      - "127.0.0.1:7474:7474"
+      - "127.0.0.1:7687:7687"
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:?set NEO4J_PASSWORD}
+      NEO4J_dbms_memory_heap_initial__size: 512M
+      NEO4J_dbms_memory_heap_max__size: 1G
+      NEO4J_dbms_memory_pagecache_size: 512M
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+
+volumes:
+  neo4j_data:
+  neo4j_logs:

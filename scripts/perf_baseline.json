@@ -1,0 +1,52 @@
+{
+  "note": "p95 in ms per endpoint, recorded on one development machine by `python scripts/perf_smoke.py --write-baseline`. Used only as a relative reference (see scripts/perf_smoke.py); never a performance claim.",
+  "mode": "full",
+  "recorded_at": "2026-10-06T12:29:13.222264+00:00",
+  "python": "3.11.8",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "profile": {
+    "sequential_requests": 15,
+    "concurrent_clients": 3,
+    "requests_per_client": 5,
+    "extra_incidents": 40,
+    "workflows_with_investigation": 10
+  },
+  "endpoints": {
+    "health": {
+      "sequential": 10.03,
+      "concurrent": 19.84
+    },
+    "incident_list": {
+      "sequential": 48.46,
+      "concurrent": 319.85
+    },
+    "incident_detail": {
+      "sequential": 48.7,
+      "concurrent": 234.41
+    },
+    "investigations": {
+      "sequential": 34.17,
+      "concurrent": 336.7
+    },
+    "workflow_list": {
+      "sequential": 61.47,
+      "concurrent": 182.66
+    },
+    "retrieval_incident": {
+      "sequential": 1427.12,
+      "concurrent": 4942.8
+    },
+    "retrieval_service_incidents": {
+      "sequential": 17.08,
+      "concurrent": 156.58
+    },
+    "retrieval_service_dependencies": {
+      "sequential": 775.99,
+      "concurrent": 3345.96
+    },
+    "policy_evaluation_api": {
+      "sequential": 92.92,
+      "concurrent": 416.79
+    }
+  }
+}

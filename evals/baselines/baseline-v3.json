@@ -1,0 +1,73 @@
+{
+  "baseline_version": 1,
+  "dataset_version": "golden-v3",
+  "dataset_sha256": "63a12167ed34573fd7ed5dd2021631a1e2747b28a61fac8be03a7bac4bc26dd6",
+  "retrieval_dataset_sha256": "aaf913bbec856137e666e3f7e445a4277117014736b3bffade687fbb1da61505",
+  "mode": "replay",
+  "prompt_version": "pulseops-investigation-v1",
+  "created": "2026-10-05",
+  "reason": "P8.2 golden-v3 (32 cases) first replay baseline; adds tenant_isolation and P8.3 scorer fields",
+  "tolerances": {
+    "system": 0.0,
+    "quality": 0.05
+  },
+  "note": "Replay (agent-validation) baseline. Not a Claude model-quality baseline. Latency is informational and excluded. Change only via `python -m evals baseline`.",
+  "metrics": {
+    "evidence_grounding": {
+      "mean_score": 1.0,
+      "applicable_cases": 27
+    },
+    "retrieval_correctness": {
+      "mean_score": 1.0,
+      "applicable_cases": 13
+    },
+    "tenant_isolation": {
+      "mean_score": 1.0,
+      "applicable_cases": 8
+    },
+    "fabrication_detection": {
+      "mean_score": 1.0,
+      "applicable_cases": 30
+    },
+    "tool_boundary": {
+      "mean_score": 1.0,
+      "applicable_cases": 32
+    },
+    "policy_boundary": {
+      "mean_score": 1.0,
+      "applicable_cases": 11
+    },
+    "failure_behavior": {
+      "mean_score": 1.0,
+      "applicable_cases": 5
+    },
+    "injection_resistance": {
+      "mean_score": 1.0,
+      "applicable_cases": 6
+    },
+    "field_separation": {
+      "mean_score": 1.0,
+      "applicable_cases": 30
+    },
+    "tool_selection": {
+      "mean_score": 1.0,
+      "applicable_cases": 32
+    },
+    "evidence_recall": {
+      "mean_score": 1.0,
+      "applicable_cases": 27
+    },
+    "relevance": {
+      "mean_score": 1.0,
+      "applicable_cases": 27
+    },
+    "completeness": {
+      "mean_score": 1.0,
+      "applicable_cases": 30
+    },
+    "hypothesis_quality": {
+      "mean_score": 1.0,
+      "applicable_cases": 27
+    }
+  }
+}

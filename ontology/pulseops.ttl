@@ -1,0 +1,40 @@
+@prefix pulseops: <https://pulseops.ai/ontology#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+pulseops:PulseOpsOntology a owl:Ontology ;
+    rdfs:label "PulseOps Incident Intelligence Ontology"@en ;
+    rdfs:comment "Core semantic vocabulary for incident investigation."@en .
+
+pulseops:Incident a owl:Class .
+pulseops:Service a owl:Class .
+pulseops:Application a owl:Class .
+pulseops:Repository a owl:Class .
+pulseops:Deployment a owl:Class .
+pulseops:Environment a owl:Class .
+pulseops:Log a owl:Class .
+pulseops:Metric a owl:Class .
+pulseops:Team a owl:Class .
+pulseops:Evidence a owl:Class .
+pulseops:Hypothesis a owl:Class .
+pulseops:Recommendation a owl:Class .
+pulseops:Change a owl:Class .
+pulseops:Dependency a owl:Class .
+
+pulseops:affects a owl:ObjectProperty ; rdfs:domain pulseops:Incident ; rdfs:range pulseops:Service .
+pulseops:hasEvidence a owl:ObjectProperty ; rdfs:domain pulseops:Incident ; rdfs:range pulseops:Evidence .
+pulseops:hasLog a owl:ObjectProperty ; rdfs:domain pulseops:Incident ; rdfs:range pulseops:Log .
+pulseops:hasMetric a owl:ObjectProperty ; rdfs:domain pulseops:Incident ; rdfs:range pulseops:Metric .
+pulseops:relatedTo a owl:ObjectProperty ; rdfs:domain pulseops:Incident ; rdfs:range pulseops:Incident .
+pulseops:implements a owl:ObjectProperty ; rdfs:domain pulseops:Service ; rdfs:range pulseops:Application .
+pulseops:dependsOn a owl:ObjectProperty ; rdfs:domain pulseops:Service ; rdfs:range pulseops:Service .
+pulseops:ownedBy a owl:ObjectProperty ; rdfs:domain pulseops:Service ; rdfs:range pulseops:Team .
+pulseops:implementedBy a owl:ObjectProperty ; rdfs:domain pulseops:Service ; rdfs:range pulseops:Repository .
+pulseops:hasDeployment a owl:ObjectProperty ; rdfs:domain pulseops:Repository ; rdfs:range pulseops:Deployment .
+pulseops:deployedTo a owl:ObjectProperty ; rdfs:domain pulseops:Deployment ; rdfs:range pulseops:Environment .
+pulseops:introducesChange a owl:ObjectProperty ; rdfs:domain pulseops:Deployment ; rdfs:range pulseops:Change .
+pulseops:supports a owl:ObjectProperty ; rdfs:domain pulseops:Evidence ; rdfs:range pulseops:Hypothesis .
+pulseops:aboutService a owl:ObjectProperty ; rdfs:domain pulseops:Hypothesis ; rdfs:range pulseops:Service .
+pulseops:addresses a owl:ObjectProperty ; rdfs:domain pulseops:Recommendation ; rdfs:range pulseops:Hypothesis .
+pulseops:affectsService a owl:ObjectProperty ; rdfs:domain pulseops:Change ; rdfs:range pulseops:Service .

@@ -1,0 +1,28 @@
+# Keep secrets, local state and non-runtime files out of the build context and the image.
+# P11: patterns without ** only match the build-context root. A stray app/agent/.env was found by the secret scan and
+# would have been copied into the image by `COPY app ./app`, so env files are excluded at every depth.
+**/.env
+**/.env.*
+!**/.env.example
+.venv/
+venv/
+.git/
+.github/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+*.db
+*.db-journal
+eval-reports/
+tests/
+evals/
+docs/
+frontend/node_modules/
+frontend/dist/
+n8n/
+ontology/
+*.md
+!README.md
+docker-compose*.yml
+Dockerfile

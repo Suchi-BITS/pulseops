@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.egg-info/
+.venv/
+venv/
+
+# Environment
+.env
+.env.*
+
+# Tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local data
+*.sqlite3
+*.db
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# P11 generated artifacts
+perf-results/
+quality-report.json
+e2e/.runtime/
+frontend/coverage/
+frontend/test-results/
+frontend/playwright-report/
+.coverage
+coverage.json

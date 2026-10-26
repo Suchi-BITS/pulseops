@@ -1,0 +1,425 @@
+{
+  "id": "pulseopsEventGate6",
+  "name": "PulseOps Operational Event (Gate 6)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pulseops-event",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ],
+      "webhookId": "pulseops-event",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "pulseopsWebhookAuth",
+          "name": "PulseOps webhook header auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst event = input.body;\nconst errors = [];\nconst required = ['event_id','event_type','timestamp','service_id','severity','source','message'];\nif (event === null || typeof event !== 'object' || Array.isArray(event)) {\n  errors.push('request body must be a JSON object');\n} else {\n  for (const f of required) {\n    if (typeof event[f] !== 'string' || event[f].trim() === '') errors.push(f + ' is required');\n  }\n  if (event.metadata !== undefined && (event.metadata === null || typeof event.metadata !== 'object' || Array.isArray(event.metadata))) {\n    errors.push('metadata must be an object');\n  }\n}\nif (errors.length) {\n  return [{ json: { valid: false, httpStatus: 400, body: { outcome: 'REJECTED', reason: 'malformed_event', errors } } }];\n}\nreturn [{ json: { valid: true, event } }];"
+      },
+      "id": "validate-event",
+      "name": "Validate Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "valid",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "is-valid",
+      "name": "Is Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://pulseops:8000/workflow/events",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.event) }}",
+        "options": {
+          "timeout": 120000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "call-pulseops",
+      "name": "PulseOps Workflow API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        200
+      ],
+      "onError": "continueRegularOutput",
+      "retryOnFail": false,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "pulseopsServiceAuth",
+          "name": "PulseOps service_n8n"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Orchestration only: classify the PulseOps response. No policy decisions are made here.\nconst res = $input.first().json;\nconst event = $('Validate Event').first().json.event;\nconst ctx = { event_id: event.event_id, n8n_execution_id: $execution.id };\nconst status = res.statusCode;\nconst body = (res.body && typeof res.body === 'object') ? res.body : null;\nconst err = (httpStatus, reason, detail) => [{ json: { route: 'error', httpStatus, body: { outcome: 'ERROR', reason, ...ctx, detail: (typeof detail === 'string' ? detail.slice(0, 300) : undefined) } } }];\n\nif (status === undefined || status === null) return err(502, 'pulseops_unavailable');\nif (status === 401) return err(502, 'pulseops_unauthorized'); // n8n credential missing/invalid: fail closed\nif (status === 403) return err(502, 'pulseops_forbidden');\nif (status === 404) return err(404, 'not_found', body && body.detail);\nif (status === 409) return err(409, 'conflict', body && body.detail);\nif (status === 400 || status === 422) return err(400, 'rejected_by_pulseops');\nif (status >= 500) return err(502, 'pulseops_error');\nif (status < 200 || status >= 300 || !body) return err(502, 'unexpected_response');\n\n// A degraded or failed investigation is never success. PulseOps already closed the workflow (rejected, not a\n// policy decision); n8n only reports the investigation outcome and the failure reason.\nif (body.investigation_status === 'degraded') return err(502, 'investigation_degraded', body.failure_reason);\nif (body.investigation_status === 'failed') return err(502, 'investigation_failed', body.failure_reason);\n\nconst known = ['allow', 'notify', 'hitl_required', 'deny'];\nconst decision = String(body.policy_decision || '').toLowerCase();\nif (!known.includes(decision) || !body.workflow_id || !body.incident_id) {\n  return err(502, 'unexpected_response');\n}\nif (body.investigation_status !== 'completed') return err(502, 'unexpected_response');\nconst route = (decision === 'allow' || decision === 'notify') ? 'notify' : (decision === 'hitl_required' ? 'hitl' : 'deny');\nreturn [{ json: { route, pulseops: body, ctx } }];"
+      },
+      "id": "inspect-result",
+      "name": "Inspect Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "r-notify",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "notify",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "notify"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "r-hitl",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "hitl",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "hitl"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "r-deny",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "deny",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "deny"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "r-error",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "error",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "error"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "route",
+      "name": "Route By Policy Result",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1100,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const p = $json.pulseops; const ctx = $json.ctx;\nconst ids = { event_id: ctx.event_id, incident_id: p.incident_id, workflow_id: p.workflow_id, correlation_id: p.correlation_id, n8n_execution_id: ctx.n8n_execution_id };\nconst investigation = { status: p.investigation_status, summary: p.investigation && p.investigation.summary, confidence: p.investigation && p.investigation.confidence };\n\n// SIMULATED notification only. Nothing is sent to any external system.\nreturn [{ json: { httpStatus: 200, body: { outcome: 'NOTIFIED_SIMULATED', ...ids,\n  policy_decision: p.policy_decision, risk_level: p.risk_level, workflow_status: p.status,\n  idempotent_replay: p.idempotent_replay, investigation,\n  simulated_notification: { channel: 'simulated', summary: 'Incident ' + p.incident_id + ' workflow ' + p.workflow_id + ' policy=' + p.policy_decision } } } }];"
+      },
+      "id": "simulated-notification",
+      "name": "Simulated Notification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        20
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const p = $json.pulseops; const ctx = $json.ctx;\nconst ids = { event_id: ctx.event_id, incident_id: p.incident_id, workflow_id: p.workflow_id, correlation_id: p.correlation_id, n8n_execution_id: ctx.n8n_execution_id };\nconst investigation = { status: p.investigation_status, summary: p.investigation && p.investigation.summary, confidence: p.investigation && p.investigation.confidence };\n\n// No action is executed. A human must decide through the existing PulseOps approval API.\nreturn [{ json: { httpStatus: 202, body: { outcome: 'HITL_PENDING', ...ids,\n  policy_decision: p.policy_decision, risk_level: p.risk_level, workflow_status: p.status,\n  idempotent_replay: p.idempotent_replay, investigation,\n  approval: { method: 'POST', path: '/workflow/' + p.workflow_id + '/decision',\n    required_fields: ['decision (approve|reject)', 'reviewer (human)', 'incident_id', 'action', 'timestamp'],\n    incident_id: p.incident_id, action: p.action } } } }];"
+      },
+      "id": "hitl-pending",
+      "name": "HITL Pending",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const p = $json.pulseops; const ctx = $json.ctx;\nconst ids = { event_id: ctx.event_id, incident_id: p.incident_id, workflow_id: p.workflow_id, correlation_id: p.correlation_id, n8n_execution_id: ctx.n8n_execution_id };\nconst investigation = { status: p.investigation_status, summary: p.investigation && p.investigation.summary, confidence: p.investigation && p.investigation.confidence };\n\n// DENY is terminal. n8n cannot override it.\nreturn [{ json: { httpStatus: 403, body: { outcome: 'DENIED', ...ids,\n  policy_decision: p.policy_decision, workflow_status: p.status, reason: p.policy_reason,\n  idempotent_replay: p.idempotent_replay, investigation } } }];"
+      },
+      "id": "denied",
+      "name": "Denied",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.body }}",
+        "options": {
+          "responseCode": "={{ $json.httpStatus }}"
+        }
+      },
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1600,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Event": {
+      "main": [
+        [
+          {
+            "node": "Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid": {
+      "main": [
+        [
+          {
+            "node": "PulseOps Workflow API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PulseOps Workflow API": {
+      "main": [
+        [
+          {
+            "node": "Inspect Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inspect Result": {
+      "main": [
+        [
+          {
+            "node": "Route By Policy Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route By Policy Result": {
+      "main": [
+        [
+          {
+            "node": "Simulated Notification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HITL Pending",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Denied",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simulated Notification": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HITL Pending": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Denied": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

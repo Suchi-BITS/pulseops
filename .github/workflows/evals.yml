@@ -1,0 +1,45 @@
+name: evals
+
+# Replay evaluation only: deterministic, no secrets, no live Claude, no network model calls.
+# Live evaluation (`python -m evals live`) is intentionally NOT part of this workflow.
+#
+# Gate 8: manual-only. The automatic signal is ci.yml (full test suite + replay evaluation), so this workflow no
+# longer runs on push/pull_request, which avoids duplicate automatic executions. Trigger it from the Actions tab.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  replay-eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install -e ".[dev]"
+
+      - name: Evaluation framework tests
+        run: python -m pytest -q tests/test_phase7_gate7.py
+
+      - name: Replay evaluation (fails on regression or failed system threshold)
+        run: python -m evals replay --out eval-reports
+
+      - name: Publish report
+        if: always()
+        run: |
+          if [ -f eval-reports/report-replay.md ]; then cat eval-reports/report-replay.md >> "$GITHUB_STEP_SUMMARY"; fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-reports
+          path: eval-reports/

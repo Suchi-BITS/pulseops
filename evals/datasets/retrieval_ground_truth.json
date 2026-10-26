@@ -1,0 +1,137 @@
+{
+  "dataset_version": "retrieval-v1",
+  "description": "Deterministic ground truth for the four controlled retrieval tools over an eval-only fixture. Expected values are derived from the fixture and the documented tool semantics, not copied from tool output.",
+  "fixture": {
+    "services": [{"service_id": "svc-ledger", "environment": "production"}],
+    "incidents": [
+      {
+        "incident_id": "INC-1007", "service_id": "svc-payment", "title": "Seed-like incident", "severity": "high",
+        "logs": [{"log_id": "log-r1007-1", "message": "Pool exhausted (seed-like)"}], "metrics": []
+      },
+      {
+        "incident_id": "INC-R001", "service_id": "svc-payment", "title": "Gateway timeouts", "severity": "high",
+        "logs": [
+          {"log_id": "log-r001-1", "message": "Gateway timeout on /charge"},
+          {"log_id": "log-r001-2", "message": "Retry budget exhausted"}
+        ],
+        "metrics": [{"metric_id": "metric-r001-1", "metric_name": "error_rate", "value": 12.5, "unit": "percent"}]
+      },
+      {"incident_id": "INC-R002", "service_id": "svc-payment", "title": "Quiet incident", "severity": "low", "logs": [], "metrics": []},
+      {
+        "incident_id": "INC-R003", "service_id": "svc-ledger", "title": "Slow ledger writes", "severity": "medium",
+        "logs": [{"log_id": "log-r003-1", "message": "Ledger write slow"}],
+        "metrics": [{"metric_id": "metric-r003-1", "metric_name": "write_latency", "value": 850, "unit": "ms"}]
+      }
+    ],
+    "deployments": [
+      {"deployment_id": "deploy-r001", "service_id": "svc-payment", "version": "2026.10.01.1"},
+      {"deployment_id": "deploy-r003", "service_id": "svc-ledger", "version": "2026.10.01.2"}
+    ]
+  },
+  "checks": [
+    {
+      "check_id": "context-INC-R001-complete-and-scoped",
+      "tool": "get_incident_context",
+      "arguments": {"incident_id": "INC-R001"},
+      "expect": {
+        "fields": {
+          "incident_id": "INC-R001", "service_id": "svc-payment", "title": "Gateway timeouts", "severity": "high",
+          "status": "open", "repository_id": "repo-payment", "deployment_ids": ["deploy-r001"],
+          "logs": ["Gateway timeout on /charge", "Retry budget exhausted"], "metrics": ["error_rate"],
+          "related_incidents": ["INC-1007", "INC-R001", "INC-R002"]
+        },
+        "unordered_fields": ["deployment_ids", "logs", "metrics", "related_incidents"],
+        "evidence_source_ids_include": ["INC-R001", "log-r001-1", "log-r001-2", "metric-r001-1", "deploy-r001", "repo-payment"],
+        "evidence_source_ids_exclude": ["log-r003-1", "metric-r003-1", "deploy-r003", "log-r1007-1"]
+      }
+    },
+    {
+      "check_id": "context-INC-R002-no-logs-or-metrics",
+      "tool": "get_incident_context",
+      "arguments": {"incident_id": "INC-R002"},
+      "expect": {
+        "fields": {"incident_id": "INC-R002", "service_id": "svc-payment", "severity": "low", "logs": [], "metrics": [], "deployment_ids": ["deploy-r001"]},
+        "unordered_fields": ["deployment_ids"],
+        "evidence_source_ids_include": ["INC-R002"],
+        "evidence_source_ids_exclude": ["log-r001-1", "metric-r001-1", "log-r003-1"]
+      }
+    },
+    {
+      "check_id": "context-INC-R003-other-service",
+      "tool": "get_incident_context",
+      "arguments": {"incident_id": "INC-R003"},
+      "expect": {
+        "fields": {
+          "incident_id": "INC-R003", "service_id": "svc-ledger", "severity": "medium", "repository_id": null,
+          "deployment_ids": ["deploy-r003"], "logs": ["Ledger write slow"], "metrics": ["write_latency"],
+          "related_incidents": ["INC-R003"]
+        },
+        "unordered_fields": ["deployment_ids", "logs", "metrics", "related_incidents"],
+        "evidence_source_ids_include": ["INC-R003", "log-r003-1", "metric-r003-1", "deploy-r003"],
+        "evidence_source_ids_exclude": ["deploy-r001", "log-r001-1", "repo-payment"]
+      }
+    },
+    {
+      "check_id": "context-unknown-incident",
+      "tool": "get_incident_context",
+      "arguments": {"incident_id": "INC-R999"},
+      "expect": {"error_contains": "not found"}
+    },
+    {
+      "check_id": "related-svc-payment",
+      "tool": "get_related_incidents",
+      "arguments": {"service_id": "svc-payment"},
+      "expect": {"value": ["INC-1007", "INC-R001", "INC-R002"], "unordered": true}
+    },
+    {
+      "check_id": "related-svc-ledger",
+      "tool": "get_related_incidents",
+      "arguments": {"service_id": "svc-ledger"},
+      "expect": {"value": ["INC-R003"], "unordered": true}
+    },
+    {
+      "check_id": "related-unknown-service",
+      "tool": "get_related_incidents",
+      "arguments": {"service_id": "svc-nope"},
+      "expect": {"value": [], "unordered": true}
+    },
+    {
+      "check_id": "repository-svc-payment",
+      "tool": "get_service_repository",
+      "arguments": {"service_id": "svc-payment"},
+      "expect": {"value": "repo-payment"}
+    },
+    {
+      "check_id": "repository-svc-ledger-unmapped",
+      "tool": "get_service_repository",
+      "arguments": {"service_id": "svc-ledger"},
+      "expect": {"value": null}
+    },
+    {
+      "check_id": "repository-unknown-service",
+      "tool": "get_service_repository",
+      "arguments": {"service_id": "svc-nope"},
+      "expect": {"value": null}
+    },
+    {
+      "check_id": "dependencies-svc-payment",
+      "tool": "get_service_dependencies",
+      "arguments": {"service_id": "svc-payment"},
+      "observation": "get_service_dependencies is a same-environment heuristic in the graph projection, not real dependency data.",
+      "expect": {"value": ["svc-ledger"], "unordered": true}
+    },
+    {
+      "check_id": "dependencies-svc-ledger",
+      "tool": "get_service_dependencies",
+      "arguments": {"service_id": "svc-ledger"},
+      "observation": "KNOWN DEVIATION (pinned, not fixed in Gate 8): DEPENDS_ON edges are only generated for services that have a repository mapping, so the unmapped svc-ledger reports no dependencies while the mapped svc-payment reports svc-ledger. The same-environment heuristic is asymmetric and undocumented.",
+      "expect": {"value": [], "unordered": true}
+    },
+    {
+      "check_id": "dependencies-unknown-service",
+      "tool": "get_service_dependencies",
+      "arguments": {"service_id": "svc-nope"},
+      "expect": {"value": [], "unordered": true}
+    }
+  ]
+}

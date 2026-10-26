@@ -1,0 +1,144 @@
+name: ci
+
+# PulseOps quality gates (P11). Every job runs the SAME checks as `python scripts/quality_gate.py` locally, one group per job,
+# so a failure points at one area. No secrets, no ANTHROPIC_API_KEY and NO live Claude evaluation (`python -m evals live`) in
+# this workflow, ever. Flake detection (repeated critical tests) is in flake.yml (scheduled / manual).
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: python tests + coverage + constraints
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install (exact versions from constraints.txt)
+        run: python -m pip install -c constraints.txt -e ".[dev]"
+      - name: Full test suite with coverage, then the ratcheted coverage thresholds
+        run: python scripts/quality_gate.py --only python-tests-coverage,python-coverage-threshold,constraints-check
+
+  frontend:
+    name: frontend lockfile, tests + coverage, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: npm ci (fails if package-lock.json does not match package.json), tests with coverage thresholds, typecheck and build
+        run: python scripts/quality_gate.py --only frontend-install,frontend-tests-coverage,frontend-build
+
+  evaluation:
+    name: replay evaluation (v2, v3), tenant isolation, evaluation integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install -c constraints.txt -e ".[dev]"
+      - name: Replay evaluation, golden-v2 (fails on regression, failed system threshold or changed dataset content)
+        run: python -m evals replay --out quality-artifacts/replay-v2
+      - name: Replay evaluation, golden-v3 (its own baseline; replay only, never live)
+        run: python -m evals replay --dataset v3 --out quality-artifacts/replay-v3
+      - name: Tenant isolation == 1.00 in both replays, and datasets/baselines/scorer unchanged
+        run: python scripts/quality_gate.py --only tenant-isolation,eval-integrity
+      - name: Publish report
+        if: always()
+        run: |
+          if [ -f quality-artifacts/replay-v3/report-replay.md ]; then cat quality-artifacts/replay-v3/report-replay.md >> "$GITHUB_STEP_SUMMARY"; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-reports
+          path: quality-artifacts/
+
+  security:
+    name: security tests, bandit, dependency audit, secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: python -m pip install -c constraints.txt -e ".[dev]"
+      - name: Security tests, Bandit (medium and above), pip-audit + npm audit (accepted findings are in quality/), repository secret scan
+        run: python scripts/quality_gate.py --only security-tests,bandit,dependency-audit,secret-scan
+
+  contract-reliability-performance:
+    name: API contract, reliability, performance smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install -c constraints.txt -e ".[dev]"
+      # The stored performance baseline was recorded on a developer machine; a shared runner is slower and noisier, so the
+      # regression factor is widened to 6 for this step (set inline: this workflow carries no `env` section by policy,
+      # see tests/test_phase8_0.py). The absolute pathological ceiling is unchanged. See docs/phase-11.md.
+      - name: Contract + reliability tests, then performance smoke against the stored baseline
+        run: PULSEOPS_PERF_FACTOR=6 python scripts/quality_gate.py --only api-reliability-tests,performance-smoke
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: perf-results
+          path: quality-artifacts/perf.json
+
+  # Heavier job: builds the Docker image and drives a real browser. Separate so that its cost never hides a fast failure.
+  docker-and-e2e:
+    name: docker build/run + browser E2E (Playwright, Chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: python -m pip install -c constraints.txt -e ".[dev]"
+      - name: Build the UI (the E2E server serves frontend/dist)
+        working-directory: frontend
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+          npx playwright install --with-deps chromium
+      - name: Docker build + run (readiness, UI, headers, non-root, no env files or keys in the image)
+        run: python scripts/quality_gate.py --only docker-validation
+      - name: Browser E2E (8 scenarios, no retries)
+        run: python scripts/quality_gate.py --only browser-e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: e2e-failure
+          path: e2e/.runtime/test-results/

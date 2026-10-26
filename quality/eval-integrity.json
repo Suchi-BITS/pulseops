@@ -1,0 +1,11 @@
+{
+  "note": "SHA-256 (line endings normalised) of the evaluation datasets, baselines and scorer. P11 must not change them; re-record only as a deliberate, reviewed evaluation change (python scripts/quality_gate.py --write-eval-manifest).",
+  "sha256": {
+    "evals/datasets/golden_incidents.json": "b555e157a9b9665e93d87cff36e07e152b079a7902ab41af425bb5344f7ffd92",
+    "evals/datasets/golden_incidents_v3.json": "c4e74edff2d88282a0416690c6189fcd4ad0acc520a204474389a11cb1efcb13",
+    "evals/datasets/retrieval_ground_truth.json": "df74d50ad837044d595c039b83c54529561406381e5988b12bf4d28f4b58ce08",
+    "evals/baselines/baseline.json": "c288cbd1eddbb38d44e4e779b0f6104a20a1832689982bd1a0c4c62c7d07d606",
+    "evals/baselines/baseline-v3.json": "06cfe5133cc5cc8afc136ce64a11aeae05fd2c85e8f906e6691eeefdda939ea1",
+    "evals/scorers.py": "f3211306a1fc11cd9f979088a311f0299c8cf4e77d0b320af88ab06a6d429213"
+  }
+}

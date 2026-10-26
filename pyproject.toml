@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pulseops-ai-engineering"
+version = "0.1.0"
+description = "PulseOps foundation for incident intelligence workflows"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.111.0,<1.0.0",
+  "uvicorn>=0.30.0,<1.0.0",
+  "neo4j>=5.20.0,<6.0.0",
+  "mcp>=2.0.0,<3.0.0",
+  "claude-agent-sdk>=0.2.0,<1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0,<9.0.0",
+  "httpx>=0.27.0,<1.0.0",
+  # P11 quality tooling (development only; never installed in the runtime image)
+  "pytest-cov>=5.0.0,<8.0.0",
+  "bandit>=1.7.0,<2.0.0",
+  "pip-audit>=2.7.0,<3.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+# P11 markers. `critical` is added to the flake-detection set by tests/conftest.py (no existing test file is edited).
+markers = [
+  "security: authentication abuse, malformed input, cross-tenant sweep, headers/CSP, prompt injection",
+  "reliability: failure, recovery, restart and concurrency behaviour",
+  "contract: API route/auth/status/envelope and frontend-type contract",
+  "performance: local performance smoke (regression detection, not a benchmark)",
+  "critical: the set repeated by the flake check (python scripts/quality_gate.py --flake)",
+]
+
+[tool.coverage.run]
+source = ["app"]
+branch = true
+
+[tool.coverage.report]
+show_missing = false
+skip_empty = true
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["app*"]

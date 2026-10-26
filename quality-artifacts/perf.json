@@ -1,0 +1,183 @@
+{
+  "generated_at": "2026-10-06T13:37:58.231713+00:00",
+  "mode": "full",
+  "python": "3.11.8",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "profile": {
+    "sequential_requests": 15,
+    "concurrent_clients": 3,
+    "requests_per_client": 5,
+    "extra_incidents": 40,
+    "workflows_with_investigation": 10
+  },
+  "endpoints": {
+    "health": {
+      "sequential": {
+        "requests": 15,
+        "errors": 0,
+        "p50_ms": 14.97,
+        "p95_ms": 21.23,
+        "max_ms": 21.23
+      },
+      "concurrent": {
+        "requests": 15,
+        "errors": 0,
+        "p50_ms": 23.67,
+        "p95_ms": 27.43,
+        "max_ms": 27.43
+      }
+    },
+    "incident_list": {
+      "sequential": {
+        "requests": 15,
+        "errors": 0,
+        "p50_ms": 41.01,
+        "p95_ms": 78.45,
+        "max_ms": 78.45
+      },
+      "concurrent": {
+        "requests": 15,
+        "errors": 0,
+        "p50_ms": 122.78,
+        "p95_ms": 193.28,
+        "max_ms": 193.28
+      }
+    },
+    "incident_detail": {
+      "sequential": {
+        "requests": 15,
+        "errors": 0,
+        "p50_ms": 49.09,
+        "p95_ms": 78.14,
+        "max_ms": 78.14
+      },
+      "concurrent": {
+        "requests": 15,
+        "errors": 0,
+        "p50_ms": 146.86,
+        "p95_ms": 262.8,
+        "max_ms": 262.8
+      }
+    },
+    "investigations": {
+      "sequential": {
+        "requests": 15,
+        "errors": 0,
+        "p50_ms": 33.83,
+        "p95_ms": 47.44,
+        "max_ms": 47.44
+      },
+      "concurrent": {
+        "requests": 15,
+        "errors": 0,
+        "p50_ms": 94.05,
+        "p95_ms": 254.63,
+        "max_ms": 254.63
+      }
+    },
+    "workflow_list": {
+      "sequential": {
+        "requests": 15,
+        "errors": 0,
+        "p50_ms": 24.51,
+        "p95_ms": 31.96,
+        "max_ms": 31.96
+      },
+      "concurrent": {
+        "requests": 15,
+        "errors": 0,
+        "p50_ms": 75.33,
+        "p95_ms": 250.46,
+        "max_ms": 250.46
+      }
+    },
+    "retrieval_incident": {
+      "sequential": {
+        "requests": 15,
+        "errors": 0,
+        "p50_ms": 1316.9,
+        "p95_ms": 2359.01,
+        "max_ms": 2359.01
+      },
+      "concurrent": {
+        "requests": 15,
+        "errors": 0,
+        "p50_ms": 5178.89,
+        "p95_ms": 6958.37,
+        "max_ms": 6958.37
+      }
+    },
+    "retrieval_service_incidents": {
+      "sequential": {
+        "requests": 15,
+        "errors": 0,
+        "p50_ms": 19.11,
+        "p95_ms": 24.44,
+        "max_ms": 24.44
+      },
+      "concurrent": {
+        "requests": 15,
+        "errors": 0,
+        "p50_ms": 75.12,
+        "p95_ms": 128.14,
+        "max_ms": 128.14
+      }
+    },
+    "retrieval_service_dependencies": {
+      "sequential": {
+        "requests": 15,
+        "errors": 0,
+        "p50_ms": 549.36,
+        "p95_ms": 733.91,
+        "max_ms": 733.91
+      },
+      "concurrent": {
+        "requests": 15,
+        "errors": 0,
+        "p50_ms": 2784.75,
+        "p95_ms": 3861.43,
+        "max_ms": 3861.43
+      }
+    },
+    "policy_evaluation_api": {
+      "sequential": {
+        "requests": 15,
+        "errors": 0,
+        "p50_ms": 84.93,
+        "p95_ms": 139.13,
+        "max_ms": 139.13
+      },
+      "concurrent": {
+        "requests": 15,
+        "errors": 0,
+        "p50_ms": 245.54,
+        "p95_ms": 423.68,
+        "max_ms": 423.68
+      }
+    }
+  },
+  "policy_engine_in_process": {
+    "iterations": 2000,
+    "errors": 0,
+    "p50_ms": 0.02,
+    "p95_ms": 0.07,
+    "max_ms": 31.32
+  },
+  "repository_construction": {
+    "service_construction_p50_ms": 22.26,
+    "repeats": 15,
+    "share_of_incident_list_p50": 0.54
+  },
+  "thresholds": {
+    "factor": 3.0,
+    "floor_ms": 50.0,
+    "pathological_ms": 5000.0
+  },
+  "notes": [
+    "Local in-process measurement against SQLite; relative to the recorded baseline only. No capacity or production claim.",
+    "FINDING: constructing a service/repository (which re-runs the idempotent schema statements) costs 22.26 ms = 54% of the incident-list p50; it likely dominates latency. Reported only; nothing was optimised.",
+    "FINDING: retrieval_incident (p50 1316.9 ms), retrieval_service_dependencies (p50 549.36 ms) are more than 10x slower than the incident list (p50 41.01 ms). These are the retrieval endpoints, which build the graph projection on demand per request. Reported only; nothing was optimised."
+  ],
+  "regressions": [],
+  "passed": true
+}

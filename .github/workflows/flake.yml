@@ -1,0 +1,32 @@
+name: flake-detection
+
+# Scheduled / manual: repeats the critical test set (`pytest -m critical`, selected in tests/conftest.py) three times.
+# There are NO retries and no rerun plugin: any failed repetition fails the job and names the test. Not part of ci.yml
+# because it triples the cost of the fast critical tests and is meant to find intermittent behaviour over time.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  flake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install -c constraints.txt -e ".[dev]"
+      - name: Critical tests x3, no hidden retries
+        run: python scripts/quality_gate.py --flake --flake-runs 3
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: flake-report
+          path: quality-artifacts/flake-report.json

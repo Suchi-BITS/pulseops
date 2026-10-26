@@ -1,0 +1,26 @@
+{
+  "allow": [
+    {
+      "id": "PYSEC-2026-1845",
+      "package": "pytest 8.4.2",
+      "reason": "Development-only test runner (not installed in the runtime image). The advisory concerns shared /tmp/pytest-of-<user> directories on multi-user UNIX hosts; the quality gate runs on single-user developer machines and ephemeral CI runners. The fix is pytest 9.0.3, a major upgrade that pyproject.toml deliberately caps below 9; the upgrade is a reviewed follow-up, not part of P11.",
+      "expires": "2026-12-31",
+      "ecosystem": "pip"
+    },
+    {
+      "id": "GHSA-5gmw-xhrv-c9v3",
+      "ecosystem": "npm",
+      "package": "tinypool (via vitest)",
+      "reason": "Development-only test runner chain (vitest 3.2.7 -> tinypool 1.1.1), never part of the built UI or the runtime image. The advisories describe a prototype-pollution gadget that needs an attacker to control the options passed to the worker pool; the tests here pass fixed options and run only trusted repository code. The fix is a major upgrade to vitest 5; it was attempted during P11 and its worker pool failed to start in this environment, so it was reverted. Re-assess when vitest 5 is validated.",
+      "expires": "2026-12-31"
+    },
+    {
+      "id": "GHSA-85c8-ppgw-ccpr",
+      "ecosystem": "npm",
+      "package": "tinypool (via vitest)",
+      "reason": "Development-only test runner chain (vitest 3.2.7 -> tinypool 1.1.1), never part of the built UI or the runtime image. The advisories describe a prototype-pollution gadget that needs an attacker to control the options passed to the worker pool; the tests here pass fixed options and run only trusted repository code. The fix is a major upgrade to vitest 5; it was attempted during P11 and its worker pool failed to start in this environment, so it was reverted. Re-assess when vitest 5 is validated.",
+      "expires": "2026-12-31"
+    }
+  ],
+  "note": "Accepted dependency findings. Each needs a written reason and an expiry date; the gate fails after the expiry so the decision is re-made. `ecosystem` is pip (default) or npm."
+}
